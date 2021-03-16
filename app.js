@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
     });
   });
   socket.on("for leve action get to other client", (payload) => {
-    console.log(payload.disClient);
+    // console.log(payload.disClient);
     io.to(payload.otherClient).emit("remove that client", {
       removeClient: payload.disClient,
     });
@@ -136,8 +136,11 @@ io.on("connection", (socket) => {
   });
   socket.on("disconnect host to client", () => {
     const roomID = hostToRoomID[socket.id];
-    console.log(roomID);
+    // console.log(roomID);
     socket.broadcast.emit("host leave", { roomID });
+  });
+  socket.on("This clint should to leave", (payload) => {
+    io.to(payload.clientId).emit("go and leave", "leave");
   });
   socket.on("disconnect", () => {
     if (hostToRoomID[socket.id]) {
@@ -150,11 +153,11 @@ io.on("connection", (socket) => {
       delete roomToHost[roomID];
       delete hostToRoomID[roomID];
     } else if (clientToRoom[socket.id]) {
-      console.log(clientToRoom[socket.id]);
+      // console.log(clientToRoom[socket.id]);
       // roomToHost[room.roomId]
       const roomOfClient = clientToRoom[socket.id];
-      console.log("rooms");
-      console.log(rooms[roomOfClient]);
+      // console.log("rooms");
+      // console.log(rooms[roomOfClient]);
 
       const host = roomToHost[roomOfClient];
 
