@@ -65,32 +65,17 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("sending signal", (payload) => {
-    let name, host;
-    if (clintToName[socket.id]) {
-      name = clintToName[socket.id];
-    } else if (hostToRoomID[socket.id]) {
-      host = roomToName[hostToRoomID[socket.id]];
-    }
     io.to(payload.userToSignal).emit("user joiend", {
       clientId: payload.callerID,
       clientSignal: payload.signal,
-      name,
-      host,
+
       id: socket.id,
     });
   });
   socket.on("returning signal", (payload) => {
-    let name, host;
-    if (clintToName[socket.id]) {
-      name = clintToName[socket.id];
-    } else {
-      host = roomToName[hostToRoomID[socket.id]];
-    }
     io.to(payload.callerID).emit("receiving return signal", {
       signal: payload.signal,
       id: socket.id,
-      name,
-      host,
     });
   });
   socket.on("for leve action get to other client", (payload) => {
@@ -98,6 +83,18 @@ io.on("connection", (socket) => {
     io.to(payload.otherClient).emit("remove that client", {
       removeClient: payload.disClient,
     });
+  });
+  //peerVideo component
+  socket.on("request for name", (payload) => {
+    const clientName = clintToName[payload.id];
+
+    socket.emit("client name", { clientName });
+  });
+  socket.on("for room name", (payload) => {
+    // console.log("hii");
+    const roomId = hostToRoomID[payload.id];
+    const roomName = roomToName[roomId];
+    socket.emit("room name", { roomName });
   });
   //lave meeting client
   socket.on("leave from metting", (data) => {
