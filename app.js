@@ -44,8 +44,19 @@ io.on("connection", (socket) => {
       const userInthisRoom = rooms[hostToRoomID[socket.id]].filter(
         (id) => id !== payload.clintId
       );
-      console.log(userInthisRoom);
-      io.to(payload.clintId).emit("permission is granted", { userInthisRoom });
+      // let name, host;
+      // if (clintToName[payload.clintId]) {
+      //   name = clintToName[payload.clintId];
+      // } else if (hostToRoomID[payload.clintId]) {
+      //   host = roomToName[hostToRoomID[payload.clintId]];
+      // }
+      // console.log(name);
+      // console.log(host);
+      io.to(payload.clintId).emit("permission is granted", {
+        userInthisRoom,
+        // name,
+        // host,
+      });
     } else {
       io.to(payload.clintId).emit("permission is rejected", {
         message: "Permission Rejected.",
@@ -57,7 +68,7 @@ io.on("connection", (socket) => {
     let name, host;
     if (clintToName[socket.id]) {
       name = clintToName[socket.id];
-    } else {
+    } else if (hostToRoomID[socket.id]) {
       host = roomToName[hostToRoomID[socket.id]];
     }
     io.to(payload.userToSignal).emit("user joiend", {
@@ -65,6 +76,7 @@ io.on("connection", (socket) => {
       clientSignal: payload.signal,
       name,
       host,
+      id: socket.id,
     });
   });
   socket.on("returning signal", (payload) => {
@@ -81,18 +93,83 @@ io.on("connection", (socket) => {
       host,
     });
   });
+  socket.on("for leve action get to other client", (payload) => {
+    console.log(payload.disClient);
+    io.to(payload.otherClient).emit("remove that client", {
+      removeClient: payload.disClient,
+    });
+  });
+  //lave meeting client
+  socket.on("leave from metting", (data) => {
+    const roomOfClient = clientToRoom[socket.id];
+    const host = roomToHost[roomOfClient];
+
+    const stilHaveInRoom = rooms[roomOfClient].filter((id) => id !== socket.id);
+
+    rooms[roomOfClient] = stilHaveInRoom;
+
+    delete clientToRoom[socket.id];
+    const exceptHost = stilHaveInRoom.filter((id) => id !== host);
+
+    socket.emit("peer destroy", { roomToName });
+    if (data === "leave") {
+      io.to(host).emit("client disconnected mess to host", {
+        disClient: socket.id,
+        rooms: exceptHost,
+      });
+    }
+
+    if (rooms[roomOfClient].lenrth < 1) {
+      delete rooms[roomOfClient];
+    }
+  });
+  socket.on("back to see room", (payload) => {
+    socket.emit("rooms", { roomToName });
+  });
+  socket.on("cheack you are this room", (check) => {
+    if (clientToRoom[socket.id] == check.roomID) {
+      socket.emit("data match");
+    }
+  });
+  socket.on("close the meeting", () => {
+    socket.emit("disconnect all clint video in host");
+  });
+  socket.on("disconnect host to client", () => {
+    const roomID = hostToRoomID[socket.id];
+    console.log(roomID);
+    socket.broadcast.emit("host leave", { roomID });
+  });
   socket.on("disconnect", () => {
     if (hostToRoomID[socket.id]) {
       const roomID = hostToRoomID[socket.id];
-      console.log(hostToRoomID[socket.id]);
-      delete rooms[roomID];
       delete roomToName[roomID];
+      socket.broadcast.emit("host leave", { roomID, roomToName });
+      // console.log(hostToRoomID[socket.id]);
+      // delete rooms[roomID];
+
       delete roomToHost[roomID];
       delete hostToRoomID[roomID];
-    } else {
+    } else if (clientToRoom[socket.id]) {
       console.log(clientToRoom[socket.id]);
+      // roomToHost[room.roomId]
+      const roomOfClient = clientToRoom[socket.id];
+      console.log("rooms");
+      console.log(rooms[roomOfClient]);
+
+      const host = roomToHost[roomOfClient];
+
+      const stilHaveInRoom = rooms[roomOfClient].filter(
+        (id) => id !== socket.id
+      );
+
+      rooms[roomOfClient] = stilHaveInRoom;
       delete clientToRoom[socket.id];
       delete clintToName[socket.id];
+      const exceptHost = stilHaveInRoom.filter((id) => id !== host);
+      io.to(host).emit("client disconnected mess to host", {
+        disClient: socket.id,
+        rooms: exceptHost,
+      });
     }
   });
 });
