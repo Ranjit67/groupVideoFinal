@@ -39,24 +39,16 @@ io.on("connection", (socket) => {
   });
   socket.on("permission status send host", (payload) => {
     if (payload.accept) {
-      rooms[hostToRoomID[socket.id]].push(payload.clintId);
-      clientToRoom[payload.clintId] = hostToRoomID[socket.id];
-      const userInthisRoom = rooms[hostToRoomID[socket.id]].filter(
-        (id) => id !== payload.clintId
-      );
-      // let name, host;
-      // if (clintToName[payload.clintId]) {
-      //   name = clintToName[payload.clintId];
-      // } else if (hostToRoomID[payload.clintId]) {
-      //   host = roomToName[hostToRoomID[payload.clintId]];
-      // }
-      // console.log(name);
-      // console.log(host);
-      io.to(payload.clintId).emit("permission is granted", {
-        userInthisRoom,
-        // name,
-        // host,
-      });
+      if (rooms[hostToRoomID[socket.id]]) {
+        rooms[hostToRoomID[socket.id]].push(payload.clintId);
+        clientToRoom[payload.clintId] = hostToRoomID[socket.id];
+        const userInthisRoom = rooms[hostToRoomID[socket.id]].filter(
+          (id) => id !== payload.clintId
+        );
+        io.to(payload.clintId).emit("permission is granted", {
+          userInthisRoom,
+        });
+      }
     } else {
       io.to(payload.clintId).emit("permission is rejected", {
         message: "Permission Rejected.",
@@ -100,13 +92,16 @@ io.on("connection", (socket) => {
   socket.on("leave from metting", (data) => {
     const roomOfClient = clientToRoom[socket.id];
     const host = roomToHost[roomOfClient];
-
-    const stilHaveInRoom = rooms[roomOfClient].filter((id) => id !== socket.id);
-
-    rooms[roomOfClient] = stilHaveInRoom;
+    let exceptHost;
+    if (rooms[roomOfClient]) {
+      const stilHaveInRoom = rooms[roomOfClient].filter(
+        (id) => id !== socket.id
+      );
+      rooms[roomOfClient] = stilHaveInRoom;
+      exceptHost = stilHaveInRoom.filter((id) => id !== host);
+    }
 
     delete clientToRoom[socket.id];
-    const exceptHost = stilHaveInRoom.filter((id) => id !== host);
 
     socket.emit("peer destroy", { roomToName });
     if (data === "leave") {
@@ -116,7 +111,7 @@ io.on("connection", (socket) => {
       });
     }
 
-    if (rooms[roomOfClient].lenrth < 1) {
+    if (rooms[roomOfClient].length < 1) {
       delete rooms[roomOfClient];
     }
   });
