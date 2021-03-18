@@ -129,7 +129,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect host to client", () => {
     const roomID = hostToRoomID[socket.id];
     // console.log(roomID);
+    delete roomToName[roomID];
     socket.broadcast.emit("host leave", { roomID });
+    delete roomToHost[roomID];
+    delete hostToRoomID[roomID];
   });
   socket.on("This clint should to leave", (payload) => {
     io.to(payload.clientId).emit("go and leave", "leave");
@@ -145,11 +148,7 @@ io.on("connection", (socket) => {
       delete roomToHost[roomID];
       delete hostToRoomID[roomID];
     } else if (clientToRoom[socket.id]) {
-      // console.log(clientToRoom[socket.id]);
-      // roomToHost[room.roomId]
       const roomOfClient = clientToRoom[socket.id];
-      // console.log("rooms");
-      // console.log(rooms[roomOfClient]);
 
       const host = roomToHost[roomOfClient];
 
